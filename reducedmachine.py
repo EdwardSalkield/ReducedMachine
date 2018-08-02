@@ -41,7 +41,7 @@ max_short_line_size = math.pow(2, shortlinesize)
 
 # Converts an integer into its symbolic representation of up to size symbols
 def int_to_symbols(n, size):
-    n = n%(math.pow(2, linesize))
+    assert(n >= 0)
 
     out = ''
     while n != 0:
@@ -119,14 +119,32 @@ class EStore():
 
         return output
 
+    # Returns the memory address and value of the line, or None
+    def parseline(self, line):
+        print(line)
+        line = line.strip().split('#')[0]
+        if line == '': return None
+        args = line.split()
+        if len(args) == 0:
+            return None
+        elif len(args) == 1:
+            args.append('')
+
+        return (args[0], args[1])
+
 
     # Load memory contents from a location 'location'
     def load(self, location):
         with open(location, 'r') as memfile:
-            for line in memfile:
-                if not line.isspace() and line[0] != '#':
-                    args = line.split()
-                    self.set(args[0], args[1])
+            for i, line in enumerate(memfile):
+                args = self.parseline(line)
+                if args != None:
+                    try:
+                        self.set(args[0], args[1])
+                    except Exception:
+                        print("Error loading line " + str(i))
+                        print("loc: " + args[0] + ", val: " + args[1])
+                        sys.exit(1)
 
 
     # Dumps the list of all viewed/written lines in memory
@@ -229,10 +247,10 @@ class ReducedMachine():
             self.state.A = 0
 
         elif func_sym =="TI":   # A' = A+S
-            self.state.A += s_pair_data % max_acc_size
+            self.state.A = (self.state.A + s_pair_data) % max_acc_size
 
         elif func_sym =="TN":   # A' = A-S
-            self.state.A -= s_pair_data % max_acc_size
+            self.state.A = (self.state.A - s_pair_data) % max_acc_size
 
         elif func_sym =="TF":   # A' = -S
             raise InvalidInstructionError("TF currently unimplemented")
@@ -283,31 +301,32 @@ class ReducedMachine():
 
 
 # Argument parsing and initialisation
-parser = argparse.ArgumentParser(description="A simulator of Turing's Reduced Machine, based on the Manchester Mark I.\nA description of the computer can be found here:\nhttp://archive.computerhistory.org/resources/text/Knuth_Don_X4100/PDF_index/k-4-pdf/k-4-u2780-Manchester-Mark-I-manual.pdf")
-parser.add_argument("codefile", nargs='?', type=str, help="location of a machine code file to be loaded into memory")
-parser.add_argument("-v", "--verbose", action='store_true', help="print more detailed information")
-parser.add_argument("-q", "--quiet", action='store_true', help="output only memory locations as specified in codefile")
-parser.add_argument("--max-steps", type=int, help="number of steps the simulator should terminate after. Defalt 0 (no limit)", default=0)
-parser.add_argument("-m", "--memdump", type=str, help="dump memory at each step of the prodecude to MEMDUMP")
-parser.add_argument("-l", "--licence", action='store_true', help="display licence")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="A simulator of Turing's Reduced Machine, based on the Manchester Mark I.\nA description of the computer can be found here:\nhttp://archive.computerhistory.org/resources/text/Knuth_Don_X4100/PDF_index/k-4-pdf/k-4-u2780-Manchester-Mark-I-manual.pdf")
+    parser.add_argument("codefile", nargs='?', type=str, help="location of a machine code file to be loaded into memory")
+    parser.add_argument("-v", "--verbose", action='store_true', help="print more detailed information")
+    parser.add_argument("-q", "--quiet", action='store_true', help="output only memory locations as specified in codefile")
+    parser.add_argument("--max-steps", type=int, help="number of steps the simulator should terminate after. Defalt 0 (no limit)", default=0)
+    parser.add_argument("-m", "--memdump", type=str, help="dump memory at each step of the prodecude to MEMDUMP")
+    parser.add_argument("-l", "--licence", action='store_true', help="display licence")
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
-if args.licence:
-    print("Copyright (C) 2018 Edward Salkield\nThis program comes with ABSOLUTELY NO WARRANTY.\nThis is free software, and you are welcome to redistribute it\nunder certain conditions. Licenced under GNU GPL v3.")
-    sys.exit(0)
+    if args.licence:
+        print("Copyright (C) 2018 Edward Salkield\nThis program comes with ABSOLUTELY NO WARRANTY.\nThis is free software, and you are welcome to redistribute it\nunder certain conditions. Licenced under GNU GPL v3.")
+        sys.exit(0)
 
-if args.verbose and args.quiet:
-    print("Error: Can't be both verbose and quiet!")
-    sys.exit(1)
+    if args.verbose and args.quiet:
+        print("Error: Can't be both verbose and quiet!")
+        sys.exit(1)
 
-if args.codefile == None:
-    print("Error: Must supply a codefile!")
-    sys.exit(1)
+    if args.codefile == None:
+        print("Error: Must supply a codefile!")
+        sys.exit(1)
 
-# Load and run Reduced Machine
-e_store = EStore()
-e_store.load(args.codefile)
-state = State(0, e_store)
-rm = ReducedMachine(state, verbose=args.verbose, quiet=args.quiet, memdump=args.memdump)
-rm.run(args.max_steps)
+    # Load and run Reduced Machine
+    e_store = EStore()
+    e_store.load(args.codefile)
+    state = State(0, e_store)
+    rm = ReducedMachine(state, verbose=args.verbose, quiet=args.quiet, memdump=args.memdump)
+    rm.run(args.max_steps)

@@ -1,0 +1,78 @@
+# Turing's "SUMPGA" program for the "Reduced Machine"
+# [/C]' = [/C] + SUM(r=0, 31)[/8 + 2r] (mod 2^40)
+# In essence, this sums the length 32 array of
+# long-pairs stored between /8 and VD, adding the result
+# into /C
+
+# Load instructions to access next array element
+// VET/     # A' = [VE],        load line-pair VE into A
+E/ METI     # A' = A + [ME],    add  line-pair ME into A
+@/ ://S     # :/ = A,           save A into :/
+            # This writes a line-pair, overflowing to S/
+
+# Add array element onto total
+A/ /CT/     # A' = /C, load current total
+:/          # ??TI from @/. A' = A + [??]
+            # Add array element ??
+U/          # /C/S from @/. /C = A, save current total
+
+# Decrement array index
+I/ MET/     # A' = [ME], load array index r
+U/ GETN     # A' = A - S, r = r - 2
+8/ ME/S     # Save new index
+D/ DS/H     # While index not 0, loop to top
+
+# Termination (Not originally part of Turing's program)
+R/  J//P    # Jump to [J/] (itself)
+J/  D/
+
+GE @///
+"E ////
+ME VE//     # VE// = 32, the sum top range, decremented by
+            # 2 each loop at 8/
+XE ////
+VE /8TI
+£E /C/S
+
+# Top of program mark
+DS ££££££££
+
+# Input array
+/8 E///////
+@8 @///////
+:8 A///////
+I8 :///////
+88 /E//////
+R8 /@//////
+N8 /A//////
+C8 /://////
+T8 //E/////
+L8 //@/////
+H8 //A/////
+P8 //://///
+O8 ///E////
+G8 ///@////
+M8 ///A////
+V8 ///:////
+/D ////E///
+@D ////@///
+:D ////A///
+ID ////:///
+8D /////E//
+RD /////@//
+ND /////A//
+CD /////://
+TD //////E/
+LD //////@/
+HD //////A/
+PD //////:/
+OD ///////E
+GD ///////@
+MD ///////A
+VD ///////:
+
+# Total
+/C ////////
+
+
+# Saves values in locations VD ... /8
